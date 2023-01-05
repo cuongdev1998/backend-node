@@ -7,6 +7,12 @@ const { ObjectId } = require("mongodb");
 const { updateClubValidation } = require("../validation");
 
 router
+    .route('/stats')
+    .get(clubController.getClubStats)
+router
+    .route('/getTopClubs')
+    .get(clubController.getTopClubs)
+router
     .route('/')
     .get(clubController.getAllClubs)
     .post(clubController.createClub)

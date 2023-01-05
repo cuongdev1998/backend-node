@@ -7,6 +7,8 @@ const PlayerRoute = require('./routes/Players');
 const ClubRoute = require('./routes/Clubs');
 const LeagueRoute = require('./routes/Leagues');
 const morgan  = require('morgan');
+const AppError = require('./utils/appError');
+const globalErrorHandler = require('./controllers/ErrorController')
 
 dotenv.config();
 //connect to DB
@@ -22,4 +24,9 @@ app.use('/api/user', authRoute)
 app.use('/api/player', PlayerRoute)
 app.use('/api/club', ClubRoute)
 app.use('/api/league', LeagueRoute)
+
+app.all('*', (req, res, next) => {
+    next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
+})
+app.use(globalErrorHandler);
 app.listen(3000, () => console.log('Server is running'));

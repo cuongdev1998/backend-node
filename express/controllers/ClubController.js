@@ -1,110 +1,110 @@
 const Club = require("../models/Club");
-const {updateClubValidation} = require("../validation");
-const {ObjectId} = require("mongodb");
+const APIFeatures = require('../utils/apiFeatures');
+const catchAsync =require('../utils/catchAsync');
+const AppError = require('../utils/appError');
 
 //create a new league
 
-exports.createClub = async (req, res) => {
-    try {
-        const newClub = new Club({
-            leagueIds: req.body.leagueIds,
-            name: req.body.name,
-        })
-        const createdClub = await newClub.save();
-        res.status(201).json({
-            status: 'success',
-            data: {
-                club: createdClub
+exports.createClub = catchAsync(async (req, res, next) => {
+    const newClub = new Club({
+        leagueIds: req.body.leagueIds,
+        name: req.body.name,
+    })
+    const createdClub = await newClub.save();
+    res.status(201).json({
+        status: 'success',
+        data: {
+            club: createdClub
+        }
+
+    })
+})
+
+
+exports.getAllClubs = catchAsync(async (req, res) => {
+    const features = new APIFeatures(Club.find(), req.query)
+        .filter()
+        .sort()
+        .paginate();
+    const allClubs = await features.query;
+
+    res.status(200).json({
+        status: 'success',
+        count: allClubs.length,
+        data: {
+            club: allClubs
+        }
+    })
+})
+exports.getClub = catchAsync(async (req, res, next) => {
+    const club = await Club.findById(req.params.id);
+    if (!club) {
+        return next(new AppError('No club found', 404))
+    }
+    res.status(200).json({
+        status: 'success',
+        data: {
+            club: club
+        }
+
+    })
+})
+exports.updateClub = catchAsync(async (req, res) => {
+    const club = await Club.findByIdAndUpdate(req.params.id, req.body, {
+        new: true,
+        runValidators: true
+    })
+    res.status(200).json({
+        status: 'success',
+        data: {
+            club: club
+        }
+
+    })
+})
+exports.removeClub = catchAsync(async (req, res) => {
+    await Club.findByIdAndDelete(req.params.id)
+    res.status(200).json({
+        status: 'success'
+    })
+})
+exports.getClubStats = catchAsync(async (req, res) => {
+    const stats = await Club.aggregate([
+        {
+            $match: { playerQty: { $gte: 20 } } // get all documents which have playerQty > 20
+        },
+        {
+            $group: {
+                _id: null,
+                avgPlayer: { $avg: '$playerQty'}, // group above data to return
+
             }
+        }
+    ])
+    res.status(200).json({
+        status: 'success',
+        data: {
+            stats
+        }
+    })
+})
 
-        })
-    } catch (error) {
-        res.status(400).json({
-            status: 'error',
-            message: error
-
-        })
-    }
-}
-
-
-exports.getAllClubs = async (req, res) => {
-    try {
-        const queryObj = {...req.query};
-        const excludeFields = ['playerQty', 'page', 'limit', 'sort'];
-
-        excludeFields.forEach(el => delete queryObj[el]);
-        const allClubs = await Club.find(queryObj);
-        res.status(200).json({
-            status: 'success',
-            count: allClubs.length,
-            data: {
-                club: allClubs
+exports.getTopClubs = catchAsync(async (req, res) => {
+    const top = await Club.aggregate([
+        {
+            $unwind: '$playerQty'
+        },
+        {
+            $match: {
+                playerQty: {
+                    $gte: 10,
+                    $lte: 20
+                }
             }
-
-        })
-    } catch (error) {
-        res.status(400).json({
-            status: 'error',
-            message: error
-
-        })
-    }
-}
-exports.getClub = async (req, res) => {
-    try {
-        const allClubs = await Club.findById(req.params.id);
-        res.status(200).json({
-            status: 'success',
-            data: {
-                club: allClubs
-            }
-
-        })
-    } catch (error) {
-        res.status(400).json({
-            status: 'error',
-            message: error
-
-        })
-    }
-}
-exports.updateClub = async (req, res) => {
-    //checking if exist club in the db
-    // const clubExist = await Club.findOne({_id: new ObjectId(req.body.id)})
-    // if (!clubExist) res.status(400).send("Club is not exist");
-
-    try {
-        const club = await Club.findByIdAndUpdate(req.params.id, req.body, {
-            new: true,
-            runValidators: true
-        })
-        res.status(200).json({
-            status: 'success',
-            data: {
-                club: club
-            }
-
-        })
-    } catch (error) {
-        res.status(400).json({
-            status: 'error',
-            message: error
-
-        })
-    }
-}
-exports.removeClub = async (req, res) => {
-    try {
-        await Club.findByIdAndDelete(req.params.id)
-        res.status(200).json({
-            status: 'success'
-        })
-    } catch (error) {
-        res.status(400).json({
-            status: 'error',
-            message: error
-
-        })
-    }
-}
+        },
+    ])
+    res.status(200).json({
+        status: 'success',
+        data: top
+    })
+})

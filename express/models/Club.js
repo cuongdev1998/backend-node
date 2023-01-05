@@ -2,7 +2,12 @@ const mongoose = require("mongoose")
 
 
 const ClubSchema = new mongoose.Schema({
-    leagueIds: [],
+    leagueIds: [
+        {
+            type: mongoose.Schema.ObjectId,
+            ref: 'League'
+        }
+    ],
     name: {
         type: String,
         required: [true, 'Club is already exist'],
@@ -18,6 +23,14 @@ const ClubSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     }
+})
+
+ClubSchema.pre(/^find/, function(next) {
+    this.populate({
+        path: 'leagueIds',
+        select: '-__v -createdDate'
+    });
+    next();
 })
 
 module.exports = mongoose.model('Club', ClubSchema)
