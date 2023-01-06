@@ -2,10 +2,10 @@ const express = require('express');
 const app = express();
 const mongoose = require('mongoose');
 const dotenv = require('dotenv')
-const authRoute = require('./routes/auth');
-const PlayerRoute = require('./routes/Players');
-const ClubRoute = require('./routes/Clubs');
-const LeagueRoute = require('./routes/Leagues');
+const AuthRoute = require('./routes/AuthRoute');
+const PlayerRoute = require('./routes/PlayerRoute');
+const ClubRoute = require('./routes/ClubRoute');
+const LeagueRoute = require('./routes/LeagueRoute');
 const morgan  = require('morgan');
 const AppError = require('./utils/appError');
 const globalErrorHandler = require('./controllers/ErrorController')
@@ -20,7 +20,7 @@ mongoose.connect(process.env.DB_CONNECTION, {useNewUrlParser: true},  () => {
 app.use(express.json());
 app.use(morgan('combined'));
 //route middleware
-app.use('/api/user', authRoute)
+app.use('/api/user', AuthRoute)
 app.use('/api/player', PlayerRoute)
 app.use('/api/club', ClubRoute)
 app.use('/api/league', LeagueRoute)

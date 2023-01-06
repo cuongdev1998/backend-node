@@ -1,10 +1,10 @@
 const mongoose = require("mongoose")
-const {Schema} = require("mongoose");
 
 
 const PlayerSchema = new mongoose.Schema({
     clubId: {
-        type: String
+        type: mongoose.Schema.ObjectId,
+        ref: 'Club'
     },
     name: {
         type: String,
@@ -12,9 +12,14 @@ const PlayerSchema = new mongoose.Schema({
         min: 6,
         max: 255
     },
+    number: {
+        type: Number,
+        min: 1,
+        max: 99
+    },
     birthDate: {
         type: Date,
-        required: true,
+        default: Date.now
     },
     salary: {
         type: Number,
@@ -25,6 +30,14 @@ const PlayerSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     }
+})
+
+PlayerSchema.pre(/^find/, function(next) {
+    this.populate({
+        path: 'clubId',
+        select: '-__v -createdDate -playerQty -leagueIds'
+    })
+    next();
 })
 
 module.exports = mongoose.model('Player', PlayerSchema)
