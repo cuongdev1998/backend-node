@@ -18,6 +18,10 @@ mongoose.connect(process.env.DB_CONNECTION, {useNewUrlParser: true},  () => {
 
 
 app.use(express.json());
+app.use((req, res, next) => {
+    req.requestTime = new Date().toISOString();
+    next();
+})
 app.use(morgan('combined'));
 //route middleware
 app.use('/api/user', AuthRoute)

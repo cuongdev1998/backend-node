@@ -1,5 +1,6 @@
 const router = require('express').Router();
 const clubController = require('../controllers/ClubController');
+const authController = require('../controllers/AuthController');
 
 router
     .route('/stats')
@@ -9,7 +10,7 @@ router
     .get(clubController.getTopClubs)
 router
     .route('/')
-    .get(clubController.getAllClubs)
+    .get(authController.protect, clubController.getAllClubs)
     .post(clubController.createClub)
 router
     .route('/:id')
