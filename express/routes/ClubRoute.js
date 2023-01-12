@@ -16,6 +16,10 @@ router
     .route('/:id')
     .get(clubController.getClub)
     .patch(clubController.updateClub)
-    .delete(clubController.removeClub)
+    .delete(
+        authController.protect,
+        authController.restrictTo('admin'),
+        clubController.removeClub
+    )
 
 module.exports = router
