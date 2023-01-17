@@ -6,6 +6,7 @@ const jwt = require("jsonwebtoken");
 const AppError = require('../utils/appError');
 const SendMail = require('../utils/email');
 const { promisify } = require('util');
+const crypto = require('crypto');
 
 const signToken = id => {
     return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -87,12 +88,54 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
 })
 
 exports.resetPassword = catchAsync(async (req, res, next) => {
+
+    const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+    const user = await User.findOne({passwordResetToken: hashedToken, passwordResetExpires: { $gt: Date.now()}});
+    if (!user) {
+        return next(new AppError('Token is invalid', 400))
+    }
+
+    user.password = req.body.password;
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+
+    await user.save();
+
+    const token = signToken(user._id);
+
     res.status(200).json({
         status: 'success',
-        token: '',
-        data: ''
+        token: token,
     })
 })
+
+
+exports.changePassword = (catchAsync(async (req, res, next) => {
+    const { currentPassword, newPassword } = req.body;
+    //1 Get user from collection
+    const user = await User.findOne({_id: req.user._id});
+    const isCorrect = await user.correctPassword(currentPassword, user.password)
+
+    //2 Check if posted current password is correct
+    if (!currentPassword) {
+        return next(new AppError('Current password must be not empty', 400))
+    }
+    if (!isCorrect) {
+        return next(new AppError('password is wrong', 401))
+    }
+
+    //3 update password
+    user.password = newPassword;
+    await user.save();
+
+    //4 log user in , send jwt
+    const token = signToken(user._id);
+
+    res.status(200).json({
+        status: 'success',
+        token: token,
+    })
+}))
 
 exports.protect = (catchAsync(async (req, res, next) => {
     //1 getting and check token
